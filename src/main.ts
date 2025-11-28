@@ -4,9 +4,14 @@ import { UpdateVariableDefinitions } from './variables.js'
 import { UpgradeScripts } from './upgrades.js'
 import { UpdateActions } from './actions.js'
 import { UpdateFeedbacks } from './feedbacks.js'
+import Modbus from 'jsmodbus'
+import net from 'net'
 
 export class ModuleInstance extends InstanceBase<ModuleConfig> {
 	config!: ModuleConfig // Setup in init()
+	pollTimeout?: NodeJS.Timeout
+	socket?: net.Socket
+	client?: Modbus.ModbusTCPClient
 
 	constructor(internal: unknown) {
 		super(internal)
@@ -20,6 +25,7 @@ export class ModuleInstance extends InstanceBase<ModuleConfig> {
 		this.updateActions() // export actions
 		this.updateFeedbacks() // export feedbacks
 		this.updateVariableDefinitions() // export variable definitions
+		void this.initConnection()
 	}
 	// When module gets deleted
 	async destroy(): Promise<void> {
@@ -28,6 +34,57 @@ export class ModuleInstance extends InstanceBase<ModuleConfig> {
 
 	async configUpdated(config: ModuleConfig): Promise<void> {
 		this.config = config
+
+		if (this.socket) {
+			clearTimeout(this.pollTimeout)
+			this.socket.destroy()
+			this.socket = undefined
+		}
+		void this.initConnection()
+	}
+
+	async initConnection(): Promise<void> {
+		try {
+			this.updateStatus(InstanceStatus.Connecting)
+			this.log('info', 'Connecting...' + JSON.stringify(this.config))
+			const socket = new net.Socket()
+			this.socket = socket
+			const client = new Modbus.client.TCP(socket, 1) // 1 = unitId/slaveId
+			this.client = client
+			const options = {
+				host: this.config.host || '127.0.0.1',
+				port: this.config.port || 502,
+			}
+
+			socket.connect(options)
+			socket.on('error', (e) => {
+				this.log('error', 'error ' + e)
+				this.updateStatus(InstanceStatus.ConnectionFailure)
+			})
+			socket.on('connect', () => {
+				this.updateStatus(InstanceStatus.Ok)
+				this.log('info', 'Connected to Modbus server!')
+				// 	client.writeSingleCoil(0, 1).catch((e) => console.error(e))
+				// 	// Read holding registers starting at address 0, count 2
+				const poll = async () => {
+					try {
+						const resp = await client.readDiscreteInputs(0, 8)
+						const relayValues = Object.fromEntries(
+							resp.response.body.valuesAsArray
+								.slice(0, 8)
+								.map((value, index) => [`input${index + 1}_status`, Boolean(value)]),
+						)
+						this.setVariableValues(relayValues)
+					} catch (err) {
+						console.error(err)
+					}
+					this.pollTimeout = setTimeout(poll as () => void, 100)
+				}
+				void poll()
+			})
+		} catch (e) {
+			this.log('error', 'Error when initializing Modbus connection ' + e)
+		}
 	}
 
 	// Return config fields for web config
