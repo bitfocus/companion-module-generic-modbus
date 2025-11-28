@@ -1,12 +1,12 @@
 {
-	"id": "modbus",
+	"id": "generic-modbus",
 	"name": "Modbus TCP",
 	"shortname": "Modbus TCP",
 	"description": "Companion Module to control Modbus Relays",
 	"version": "0.0.0",
 	"license": "MIT",
-	"repository": "git+https://github.com/bitfocus/companion-module-your-modbus.git",
-	"bugs": "https://github.com/bitfocus/companion-module-modbus/issues",
+	"repository": "git+https://github.com/bitfocus/companion-module-generic-modbus.git",
+	"bugs": "https://github.com/bitfocus/companion-module-generic-modbus/issues",
 	"maintainers": [
 		{
 			"name": "Yannis Guedel",
