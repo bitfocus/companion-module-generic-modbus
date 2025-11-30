@@ -1,6 +1,6 @@
 {
 	"name": "companion-module-generic-modbus",
-	"version": "0.2.1",
+	"version": "0.2.3",
 	"main": "dist/main.js",
 	"type": "module",
 	"scripts": {
