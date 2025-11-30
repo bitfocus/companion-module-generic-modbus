@@ -64,17 +64,20 @@ export class ModuleInstance extends InstanceBase<ModuleConfig> {
 			socket.on('connect', () => {
 				this.updateStatus(InstanceStatus.Ok)
 				this.log('info', 'Connected to Modbus server!')
-				// 	client.writeSingleCoil(0, 1).catch((e) => console.error(e))
-				// 	// Read holding registers starting at address 0, count 2
+				const currentValues: Record<string, boolean> = {}
 				const poll = async () => {
 					try {
 						const resp = await client.readDiscreteInputs(0, 8)
 						const relayValues = Object.fromEntries(
 							resp.response.body.valuesAsArray
 								.slice(0, 8)
-								.map((value, index) => [`input${index + 1}_status`, Boolean(value)]),
+								.map((value, index) => [`input${index + 1}_status`, Boolean(value)] as const)
+								.filter(([key, value]) => currentValues[key] !== value),
 						)
-						this.setVariableValues(relayValues)
+						if (Object.values(relayValues).length > 0) {
+							this.setVariableValues(relayValues)
+							this.checkFeedbacks('InputState')
+						}
 					} catch (err) {
 						console.error(err)
 					}
