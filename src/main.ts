@@ -1,4 +1,10 @@
-import { InstanceBase, runEntrypoint, InstanceStatus, SomeCompanionConfigField } from '@companion-module/base'
+import {
+	InstanceBase,
+	runEntrypoint,
+	InstanceStatus,
+	SomeCompanionConfigField,
+	TCPHelper,
+} from '@companion-module/base'
 import { GetConfigFields, type ModuleConfig } from './config.js'
 import { UpdateVariableDefinitions } from './variables.js'
 import { UpgradeScripts } from './upgrades.js'
@@ -47,22 +53,23 @@ export class ModuleInstance extends InstanceBase<ModuleConfig> {
 		try {
 			this.updateStatus(InstanceStatus.Connecting)
 			this.log('info', 'Connecting...' + JSON.stringify(this.config))
-			const socket = new net.Socket()
-			this.socket = socket
-			const client = new Modbus.client.TCP(socket, 1) // 1 = unitId/slaveId
-			this.client = client
 			const options = {
 				host: this.config.host || '127.0.0.1',
 				port: this.config.port || 502,
 			}
+			const tcp = new TCPHelper(options.host, options.port)
 
-			socket.connect(options)
-			socket.on('error', (e) => {
-				this.log('error', 'error ' + e)
-				this.updateStatus(InstanceStatus.ConnectionFailure)
+			const client = new Modbus.client.TCP(tcp._socket, 1) // 1 = unitId/slaveId
+			this.client = client
+
+			tcp.on('status_change', (status, message) => {
+				this.updateStatus(status, message)
 			})
-			socket.on('connect', () => {
-				this.updateStatus(InstanceStatus.Ok)
+
+			tcp.on('error', (e) => {
+				this.log('error', 'error ' + e)
+			})
+			tcp.on('connect', () => {
 				this.log('info', 'Connected to Modbus server!')
 				const currentValues: Record<string, boolean> = {}
 				const poll = async () => {
