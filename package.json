@@ -16,7 +16,7 @@
 	"license": "MIT",
 	"repository": {
 		"type": "git",
-		"url": "git+https://github.com/bitfocus/git@github.com:bitfocus/companion-module-generic-modbus.git.git"
+		"url": "git+https://github.com/bitfocus/companion-module-generic-modbus.git"
 	},
 	"engines": {
 		"node": "^22.20",
