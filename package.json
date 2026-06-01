@@ -16,15 +16,14 @@
 	"license": "MIT",
 	"repository": {
 		"type": "git",
-		"url": "git+https://github.com/bitfocus/git@github.com:bitfocus/companion-module-generic-modbus.git.git"
+		"url": "git+https://github.com/bitfocus/companion-module-generic-modbus.git"
 	},
 	"engines": {
 		"node": "^22.20",
 		"yarn": "^4"
 	},
 	"dependencies": {
-		"@companion-module/base": "~1.12.1",
-		"jsmodbus": "^4.0.10"
+		"@companion-module/base": "~1.12.1"
 	},
 	"devDependencies": {
 		"@companion-module/tools": "^2.6.1",
